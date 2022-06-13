@@ -1,0 +1,7 @@
+[submodule "thirdparty/hanabi-learning-environment"]
+	path = thirdparty/hanabi-learning-environment
+	url = git@github.com:deepmind/hanabi-learning-environment.git
+[submodule "thirdparty/pybind11"]
+	path = thirdparty/pybind11
+	url = git@github.com:colesbury/pybind11.git
+	branch = v2.6.2-nogil

@@ -15,7 +15,7 @@ python -m src.test_pybind_env_speed
 The program may crash when using more than 1 thread.
 
 
-To see taht the cffi version does not scale linearly:
+To see that the cffi version does not scale linearly:
 
 ```
 cd thirdparty/hanabi-learning-environment

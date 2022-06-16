@@ -1,6 +1,6 @@
 from . import set_path
-import hle
 import torch
+import hle
 
 
 class HanabiEnv:

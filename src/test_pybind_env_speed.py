@@ -37,13 +37,17 @@ def run_env_pybind(env):
 
 
 def run_env_loop_pybind(num_game):
+    t = time.time()
     env = HanabiEnv(num_player=2, seed=1, max_len=-1, bomb=1)
     num_step = 0
-
     for i in range(num_game):
         num_step += run_env_pybind(env)
 
-    return num_step
+    t = time.time() - t
+    # print("time taken:", t)
+    speed = num_step / t
+    # print("speed: ", speed)
+    return speed
 
 
 def run_env_loop_pybind_multithread(num_game_per_thread, num_thread):
@@ -52,16 +56,22 @@ def run_env_loop_pybind_multithread(num_game_per_thread, num_thread):
         for _ in range(num_thread):
             futs.append(executor.submit(lambda: run_env_loop_pybind(num_game_per_thread)))
 
-    steps = [f.result() for f in futs]
-    return np.sum(steps)
+    speeds = [f.result() for f in futs]
+    # print(speeds)
+    return np.mean(speeds)
 
 
 if __name__ == "__main__":
     import sys
     print(f"nogil={getattr(sys.flags, 'nogil', False)}")
 
-    for num_t in [1, 2, 4, 8, 16, 32]:
-        t = time.time()
-        num_step = run_env_loop_pybind_multithread(100, num_t)
-        end_t = time.time()
-        print(f"{num_t} thread {num_step / (end_t - t):.2f} steps/s")
+    speed = run_env_loop_pybind(100)
+    print("single thread ref speed:", speed)
+
+    # for num_t in [1, 2, 4, 8, 16, 32]:
+    for num_t in [1, 2, 4, 8, 16, 32, 40, 80]:
+        # t = time.time()
+        avg_speed = run_env_loop_pybind_multithread(100, num_t)
+        # end_t = time.time()
+        print(f"{num_t} thread {avg_speed * num_t:.2f} steps/s")
+        # print("")

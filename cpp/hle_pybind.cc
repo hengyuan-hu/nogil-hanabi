@@ -87,7 +87,7 @@ PYBIND11_MODULE(hle, m) {
   py::class_<HanabiHand>(m, "HanabiHand")
       .def(py::init<>())
       .def("cards", &HanabiHand::Cards)
-      // .def("knowledge_", &HanabiHand::Knowledge_, py::return_value_policy::reference)
+      .def("knowledge_", &HanabiHand::Knowledge_, py::return_value_policy::reference)
       .def("knowledge", &HanabiHand::Knowledge)
       .def("add_card", &HanabiHand::AddCard)
       .def("remove_from_hand", &HanabiHand::RemoveFromHand)

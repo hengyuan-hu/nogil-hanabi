@@ -8,4 +8,6 @@ make
 python src/thread_loop.py
 ```
 
-It will crash when importing the second pybind library, no matter which one is the second.
+`test_with_dummy_actor` works fine as it does not use a pybinded batcher + torch model for inference.
+
+`test`, which use the batcher tool from `rla` lib and a pytorch model, crashes on multiple threaeds.

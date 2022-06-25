@@ -1,4 +1,4 @@
-from . import set_path
+import set_path
 import torch
 import hle
 
@@ -82,6 +82,9 @@ class HanabiEnv:
             "legal_move": torch.tensor(vec_legal_move)
         }
         return feats
+
+    def is_null(self):
+        return self.hle_state is None
 
     def terminated(self):
         if self.hle_state is None:

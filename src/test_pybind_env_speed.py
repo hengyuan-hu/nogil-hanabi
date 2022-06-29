@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import torch
-from .env import HanabiEnv
+from env import HanabiEnv
 
 
 class Thread(threading.Thread):

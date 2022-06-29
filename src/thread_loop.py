@@ -177,14 +177,14 @@ if __name__ == "__main__":
     import numpy as np
     from batched_model_wrapper import BatchedModelWrapper
 
-    test_with_dummy_actor(1, 100)
-    test_with_dummy_actor(2, 100)
-    test_with_dummy_actor(4, 100)
+    # test_with_dummy_actor(1, 100)
+    # test_with_dummy_actor(2, 100)
+    # test_with_dummy_actor(4, 100)
 
     # this will crash
-    test(1, 100)
-    test(2, 100)
-    test(4, 200)
-
-    # test(8, 200)
-    # test(16, 200)
+    # test(1, 100)
+    # test(2, 100)
+    # test(4, 100)
+    # test(8, 100)
+    # test(16, 100)
+    test(80, 200)

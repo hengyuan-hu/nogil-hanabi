@@ -3,7 +3,7 @@
 To reproduce the import problem
 ```
 git pull
-git git submodule update --init --recursive
+git submodule update --init --recursive
 make
 python src/thread_loop.py
 ```

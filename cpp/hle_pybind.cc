@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <torch/extension.h>
 
 #include "hanabi-learning-environment/hanabi_lib/canonical_encoders.h"
 #include "hanabi-learning-environment/hanabi_lib/hanabi_card.h"
@@ -11,6 +12,48 @@
 
 namespace py = pybind11;
 using namespace hanabi_learning_env;
+
+
+std::unordered_map<std::string, torch::Tensor> hanabiObserve(
+    const HanabiState& state,
+    int playerIdx) {
+  const auto& game = *(state.ParentGame());
+  auto obs = HanabiObservation(state, playerIdx, true);
+  auto encoder = CanonicalObservationEncoder(&game);
+
+  std::vector<float> vS = encoder.Encode(
+      obs,
+      true,  // regardless of the flag, splitPrivatePulic  masks out this field
+      std::vector<int>(),  // shuffle card
+      false,
+      std::vector<int>(),
+      std::vector<int>(),
+      false);
+
+  // auto feat = splitPrivatePublic(vS, game);
+  int bitsPerHand = game.HandSize() * game.NumColors() * game.NumRanks();
+  std::vector<float> vPriv(vS.begin() + bitsPerHand, vS.end());
+  std::vector<float> vPubl(vS.begin() + bitsPerHand * game.NumPlayers(), vS.end());
+
+  // legal moves
+  const auto& legalMove = state.LegalMoves(playerIdx);
+  std::vector<float> vLegalMove(game.MaxMoves() + 1);
+  for (auto move : legalMove) {
+
+    auto uid = game.GetMoveUid(move);
+    vLegalMove[uid] = 1;
+  }
+  if (legalMove.size() == 0) {
+    vLegalMove[game.MaxMoves()] = 1;
+  }
+
+  return {
+    {"priv_s", torch::tensor(vPriv)},
+    {"publ_s", torch::tensor(vPubl)},
+    {"legal_move", torch::tensor(vLegalMove)}
+  };
+}
+
 
 PYBIND11_MODULE(hle, m) {
   py::class_<HanabiCard>(m, "HanabiCard")
@@ -162,18 +205,6 @@ PYBIND11_MODULE(hle, m) {
 
   py::class_<HanabiObservation>(m, "HanabiObservation")
       .def(py::init<const HanabiState&, int, bool>())
-      // .def(py::init<
-      //      int,
-      //      int,
-      //      const std::vector<HanabiHand>&,
-      //      const std::vector<HanabiCard>&,
-      //      const std::vector<int>&,
-      //      const std::vector<HanabiHistoryItem>&,
-      //      int,
-      //      int,
-      //      int,
-      //      const std::vector<HanabiMove>&,
-      //      const HanabiGame*>())
       .def("legal_moves", &HanabiObservation::LegalMoves)
       .def("last_moves", &HanabiObservation::LastMoves)
       .def("life_tokens", &HanabiObservation::LifeTokens)
@@ -192,4 +223,6 @@ PYBIND11_MODULE(hle, m) {
       .def(py::init<const HanabiGame*>())
       .def("shape", &CanonicalObservationEncoder::Shape)
       .def("encode", &CanonicalObservationEncoder::Encode);
+
+  m.def("observe", &hanabiObserve);
 }

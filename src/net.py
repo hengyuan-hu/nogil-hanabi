@@ -110,3 +110,85 @@ class LSTMNet(nn.Module):
         # greedy_action: [seq_len, batch]
         greedy_action = legal_q.argmax(2).detach()
         return qa, greedy_action, q, o
+
+
+@dataclass
+class PublicLSTMNetConfig:
+    priv_in_dim: int
+    publ_in_dim: int
+    hid_dim: int
+    out_dim: int
+    num_lstm_layer: int
+
+
+class PublicLSTMNet(nn.Module):
+    def __init__(self, config: PublicLSTMNetConfig):
+        super().__init__()
+
+        self.priv_in_dim = config.priv_in_dim
+        self.publ_in_dim = config.publ_in_dim
+        self.hid_dim = config.hid_dim
+        self.out_dim = config.out_dim
+        self.num_ff_layer = 1
+        self.num_lstm_layer = config.num_lstm_layer
+
+        self.priv_net = nn.Sequential(
+            nn.Linear(self.priv_in_dim, self.hid_dim),
+            nn.ReLU(),
+            nn.Linear(self.hid_dim, self.hid_dim),
+            nn.ReLU(),
+            nn.Linear(self.hid_dim, self.hid_dim),
+            nn.ReLU(),
+        )
+
+        ff_layers = [nn.Linear(self.publ_in_dim, self.hid_dim), nn.ReLU()]
+        for i in range(1, self.num_ff_layer):
+            ff_layers.append(nn.Linear(self.hid_dim, self.hid_dim))
+            ff_layers.append(nn.ReLU())
+        self.publ_net = nn.Sequential(*ff_layers)
+
+        self.lstm = nn.LSTM(
+            self.hid_dim,
+            self.hid_dim,
+            num_layers=self.num_lstm_layer,
+        )
+        # self.lstm.flatten_parameters()
+
+        self.fc_v = nn.Linear(self.hid_dim, 1)
+        self.fc_a = nn.Linear(self.hid_dim, self.out_dim)
+
+    def get_init_rnn_hid(self):
+        """
+        Get inital h for the single agent/player,
+        batchsize dimension is omitted
+        """
+        shape = (self.num_lstm_layer, self.hid_dim)
+        hid = {"h": torch.zeros(*shape), "c": torch.zeros(*shape)}
+        return hid
+
+    def adv(self, obs, hid):
+        """
+        Compute advantage for observation of one step
+        obs contains:
+            priv_s: [1, batchsize, priv_dim]
+            legal_action: [1, batchsize, num_action]
+        hid contains:
+            h: [num_layer, batchsize, rnn_dim]
+            c0: [num_layer, batchsize, rnn_dim]
+        """
+        priv_s = obs["priv_s"]
+        publ_s = obs["publ_s"]
+        assert priv_s.dim() == 3, "must be [seq_len, batch, priv_dim]"
+        priv_o = self.priv_net(priv_s)
+
+        priv_o = self.priv_net(priv_s)
+        x = self.publ_net(publ_s)
+        if hid is None:
+            publ_o, (h, c) = self.lstm(x)
+        else:
+            publ_o, (h, c) = self.lstm(x, (hid["h"], hid["c"]))
+
+        o = priv_o * publ_o
+        a = self.fc_a(o)
+        new_hid = {"h": h, "c": c}
+        return a, new_hid

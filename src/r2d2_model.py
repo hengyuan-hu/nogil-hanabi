@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
+from env import HanabiEnv
+from net import LSTMNet, LSTMNetConfig, PublicLSTMNet, PublicLSTMNetConfig
 import utils
 
 
@@ -128,3 +130,25 @@ class R2D2Model(nn.Module):
         rand = (rand < eps).long()
         action = (greedy_action * (1 - rand) + random_action * rand).detach().long()
         return {"a": action}, new_hid
+
+
+def load_default_model(device):
+    num_player = 2
+    env = HanabiEnv(num_player=num_player, seed=1, max_len=-1, bomb=1)
+    priv_dim, publ_dim = env.observation_dim()
+    num_action = env.num_action()
+    algo_config = AlgoConfig(True, False)
+    q_config = QLearningConfig(1, 0.999, 0.9, True)
+
+    weight_file = "/home/hhu/dev/hanabi/adv-models/monster-bot/model0.pthw"
+    d = torch.load(weight_file)
+    if "priv_net.0.weight" in list(d.keys()):
+        net_config = PublicLSTMNetConfig(priv_dim, publ_dim, 512, num_action, 2)
+        net_cls = PublicLSTMNet
+    else:
+        net_config = LSTMNetConfig(priv_dim, 512, num_action, 2)
+        net_cls = LSTMNet
+    r2d2_model = R2D2Model("cpu", net_cls, net_config, algo_config, q_config)
+    utils.load_weight(r2d2_model.online_net, weight_file, "cpu")
+    r2d2_model.to(device)
+    return r2d2_model

@@ -19,12 +19,9 @@ class HanabiEnv:
             "bomb": str(bomb),
             "random_start_player": str(random_start_player)
         }
-        # print("before creating game")
         self.hle_game = hle.HanabiGame(params)
-        # print("after creating game")
         self.hle_state = None
         self.reward = 0
-
         self.num_step = 0
 
     def observation_dim(self):
@@ -58,8 +55,7 @@ class HanabiEnv:
     def get_move(self, move_idx):
         return self.hle_game.get_move(move_idx)
 
-    def observe(self, player_idx):
-        # print("observe", self.num_step)
+    def py_observe(self, player_idx):
         game = self.hle_game
         state = self.hle_state
 
@@ -82,6 +78,9 @@ class HanabiEnv:
             "legal_move": torch.tensor(vec_legal_move)
         }
         return feats
+
+    def observe(self, player_idx):
+        return hle.observe(self.hle_state, player_idx)
 
     def is_null(self):
         return self.hle_state is None

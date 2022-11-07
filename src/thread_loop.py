@@ -1,5 +1,6 @@
 from env import HanabiEnv
 from r2d2_actor import R2D2Actor
+import r2d2_model
 import utils
 
 
@@ -101,15 +102,15 @@ def create_envs_and_dummy_actors(num_env, num_player, seed, max_len):
 def test(num_thread, game_per_thread):
     print(f"running with {num_thread} threads and {game_per_thread} games in each thread")
 
-    model = utils.load_default_model("cuda")
+    model = r2d2_model.load_default_model("cuda")
     model_wrapper = BatchedModelWrapper(model, True)
     model_wrapper.register_method("act", 4000)
     model_wrapper.start()
 
     t = time.time()
     thread_loops = []
-    for _ in range(num_thread):
-        envs, actors = create_envs_and_actors(game_per_thread, 2, 1, -1, model_wrapper)
+    for i in range(num_thread):
+        envs, actors = create_envs_and_actors(game_per_thread, 2, i * game_per_thread, -1, model_wrapper)
         thread_loop = ThreadLoop(envs, actors, 2000)
         thread_loops.append(thread_loop)
     print(f"time to create env: {time.time() - t:.5f}")
@@ -178,13 +179,13 @@ if __name__ == "__main__":
     from batched_model_wrapper import BatchedModelWrapper
 
     # test_with_dummy_actor(1, 100)
-    # test_with_dummy_actor(2, 100)
+    # test_with_dummy_actor(16, 100)
     # test_with_dummy_actor(4, 100)
 
-    # this will crash
     # test(1, 100)
     # test(2, 100)
     # test(4, 100)
-    # test(8, 100)
-    # test(16, 100)
-    test(80, 200)
+    # test(6, 100)
+    # test(12, 100)
+    test(16, 100)
+    # test(80, 200)

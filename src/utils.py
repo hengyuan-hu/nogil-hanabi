@@ -77,22 +77,3 @@ def kill_all_on_failure(func):
 
     return wrapped_func
 
-
-def load_default_model(device):
-    from env import HanabiEnv
-    from r2d2_model import R2D2Model, AlgoConfig, QLearningConfig
-    from net import LSTMNet, LSTMNetConfig
-
-    num_player = 2
-    env = HanabiEnv(num_player=num_player, seed=1, max_len=-1, bomb=1)
-    priv_dim, _ = env.observation_dim()
-    num_action = env.num_action()
-    net_config = LSTMNetConfig(priv_dim, 512, num_action, 2)
-    algo_config = AlgoConfig(True, False)
-    q_config = QLearningConfig(1, 0.999, 0.9, True)
-    r2d2_model = R2D2Model("cpu", LSTMNet, net_config, algo_config, q_config)
-    weight_file = "/checkpoint/hengyuan/hanabi_benchmark/vani_sad_aux_op/NETlstm_OP1_SEEDa/model0.pthw"
-    d = torch.load(weight_file)
-    load_weight(r2d2_model.online_net, weight_file, "cpu")
-    r2d2_model.to(device)
-    return r2d2_model
